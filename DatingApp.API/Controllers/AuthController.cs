@@ -51,23 +51,22 @@ namespace DatingApp.API.Controllers
             if (userFromRepo == null)
                 return Unauthorized();
 
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.NameIdentifier,userFromRepo.ID.ToString()),
-            new Claim(ClaimTypes.Name,userFromRepo.UserName)
-            };
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));     
-            var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.Now.AddDays(1),
-                SigningCredentials = cred
-            };
-
+         
             var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var token = tokenHandler.CreateToken(new SecurityTokenDescriptor
+            {
+                // claims
+                Subject = new ClaimsIdentity(new[]
+                            {
+                                new Claim(ClaimTypes.NameIdentifier,userFromRepo.ID.ToString()),
+                                new Claim(ClaimTypes.Name,userFromRepo.UserName)
+                             }),
+                Expires = DateTime.Now.AddDays(1),
+                //credentials
+                SigningCredentials = new SigningCredentials(
+                                             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value)),
+                                             SecurityAlgorithms.HmacSha512Signature)
+            });
 
             return Ok( new {
                 token = tokenHandler.WriteToken(token)
